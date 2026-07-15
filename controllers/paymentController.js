@@ -1,12 +1,23 @@
 const AppDataSource = require("../config/db");
 const Payment = require("../models/payment");
+const Booking = require("../models/booking");
 
 const paymentRepository = AppDataSource.getRepository(Payment);
+const bookingRepository = AppDataSource.getRepository(Booking);
 
 // Initialize Payment
 const initializePayment = async (req, res) => {
   try {
     const { bookingId, amount } = req.body;
+    const booking = await bookingRepository.findOne({
+  where: { id: Number(bookingId) },
+});
+
+if (!booking) {
+  return res.status(404).json({
+    message: "Booking not found",
+  });
+}
 
     if (!bookingId || !amount) {
       return res.status(400).json({
@@ -51,6 +62,11 @@ const verifyPayment = async (req, res) => {
       });
     }
 
+    if (payment.status === "Successful") {
+  return res.status(400).json({
+    message: "Payment has already been verified",
+  });
+}
     payment.status = "Successful";
 
     await paymentRepository.save(payment);

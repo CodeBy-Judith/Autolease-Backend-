@@ -32,14 +32,50 @@ module.exports = new EntitySchema({
       unique: true,
     },
 
-    pricePerDay: {
-      type: "decimal",
-    },
+    vin: {
+  type: "varchar",
+  unique: true,
+  nullable: true,
+},
 
-    available: {
-      type: "boolean",
-      default: true,
-    },
+engineType: {
+  type: "varchar",
+  nullable: true,
+},
+
+fuelType: {
+  type: "varchar",
+  nullable: true,
+},
+
+transmission: {
+  type: "varchar",
+  nullable: true,
+},
+
+description: {
+  type: "text",
+  nullable: true,
+},
+
+address: {
+  type: "varchar",
+  nullable: true,
+},
+
+pricePerDay: {
+  type: "decimal",
+},
+
+available: {
+  type: "boolean",
+  default: true,
+},
+
+isPaused: {
+  type: "boolean",
+  default: false,
+},
 
     createdAt: {
       type: "timestamp",

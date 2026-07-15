@@ -20,6 +20,15 @@ const getDashboard = async (req, res) => {
     const totalReviews = await reviewRepository.count();
     const totalPayments = await paymentRepository.count();
 
+    const payments = await paymentRepository.find();
+
+    const totalRevenue = payments.reduce((sum, payment) => {
+      if (payment.status === "Successful") {
+        return sum + Number(payment.amount);
+      }
+      return sum;
+    }, 0);
+
     res.status(200).json({
       message: "Dashboard fetched successfully",
       dashboard: {
@@ -28,8 +37,10 @@ const getDashboard = async (req, res) => {
         totalBookings,
         totalReviews,
         totalPayments,
+        totalRevenue,
       },
     });
+
   } catch (error) {
     res.status(500).json({
       message: error.message,

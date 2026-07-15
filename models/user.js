@@ -24,7 +24,17 @@ module.exports = new EntitySchema({
       type: "varchar",
     },
 
-    role: {
+    resetToken: {
+  type: "varchar",
+  nullable: true,
+},
+
+resetTokenExpires: {
+  type: "timestamp",
+  nullable: true,
+},
+
+role: {
       type: "varchar",
       default: "user",
     },

@@ -3,6 +3,7 @@ const Vehicle = require("../models/vehicle");
 
 const vehicleRepository = AppDataSource.getRepository(Vehicle);
 
+// ====================== ADD VEHICLE ======================
 const addVehicle = async (req, res) => {
   try {
     const {
@@ -11,6 +12,12 @@ const addVehicle = async (req, res) => {
       year,
       color,
       plateNumber,
+      vin,
+      engineType,
+      fuelType,
+      transmission,
+      description,
+      address,
       pricePerDay,
     } = req.body;
 
@@ -23,7 +30,7 @@ const addVehicle = async (req, res) => {
       !pricePerDay
     ) {
       return res.status(400).json({
-        message: "All fields are required",
+        message: "Brand, model, year, color, plate number and price are required",
       });
     }
 
@@ -43,6 +50,12 @@ const addVehicle = async (req, res) => {
       year,
       color,
       plateNumber,
+      vin,
+      engineType,
+      fuelType,
+      transmission,
+      description,
+      address,
       pricePerDay,
     });
 
@@ -60,15 +73,61 @@ const addVehicle = async (req, res) => {
   }
 };
 
+// ====================== GET ALL VEHICLES ======================
 const getAllVehicles = async (req, res) => {
   try {
-    const vehicles = await vehicleRepository.find();
+    const {
+      search,
+      available,
+      sort,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    let query = vehicleRepository.createQueryBuilder("vehicle");
+
+    // Search by brand or model
+    if (search) {
+      query = query.where(
+        "LOWER(vehicle.brand) LIKE LOWER(:search) OR LOWER(vehicle.model) LIKE LOWER(:search)",
+        {
+          search: `%${search}%`,
+        }
+      );
+    }
+
+    // Filter by availability
+    if (available !== undefined) {
+      query = query.andWhere(
+        "vehicle.available = :available",
+        {
+          available: available === "true",
+        }
+      );
+    }
+
+    // Sort by price
+    if (sort === "asc") {
+      query = query.orderBy("vehicle.pricePerDay", "ASC");
+    } else if (sort === "desc") {
+      query = query.orderBy("vehicle.pricePerDay", "DESC");
+    }
+
+    // Pagination
+    const skip = (Number(page) - 1) * Number(limit);
+
+    query = query.skip(skip).take(Number(limit));
+
+    const [vehicles, total] = await query.getManyAndCount();
 
     res.status(200).json({
       message: "Vehicles fetched successfully",
-      count: vehicles.length,
+      total,
+      currentPage: Number(page),
+      totalPages: Math.ceil(total / Number(limit)),
       vehicles,
     });
+
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -76,6 +135,7 @@ const getAllVehicles = async (req, res) => {
   }
 };
 
+// ====================== UPDATE VEHICLE ======================
 const updateVehicle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -96,6 +156,12 @@ const updateVehicle = async (req, res) => {
       year,
       color,
       plateNumber,
+      vin,
+      engineType,
+      fuelType,
+      transmission,
+      description,
+      address,
       pricePerDay,
     } = req.body;
 
@@ -104,6 +170,12 @@ const updateVehicle = async (req, res) => {
     vehicle.year = year || vehicle.year;
     vehicle.color = color || vehicle.color;
     vehicle.plateNumber = plateNumber || vehicle.plateNumber;
+    vehicle.vin = vin || vehicle.vin;
+    vehicle.engineType = engineType || vehicle.engineType;
+    vehicle.fuelType = fuelType || vehicle.fuelType;
+    vehicle.transmission = transmission || vehicle.transmission;
+    vehicle.description = description || vehicle.description;
+    vehicle.address = address || vehicle.address;
     vehicle.pricePerDay = pricePerDay || vehicle.pricePerDay;
 
     await vehicleRepository.save(vehicle);
@@ -120,6 +192,7 @@ const updateVehicle = async (req, res) => {
   }
 };
 
+// ====================== DELETE VEHICLE ======================
 const deleteVehicle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -147,6 +220,7 @@ const deleteVehicle = async (req, res) => {
   }
 };
 
+// ====================== TOGGLE AVAILABILITY ======================
 const toggleAvailability = async (req, res) => {
   try {
     const { id } = req.params;

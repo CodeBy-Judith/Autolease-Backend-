@@ -33,6 +33,21 @@ const createBooking = async (req, res) => {
       where: { id: Number(vehicleId) },
     });
 
+    const pickup = new Date(pickupDate);
+const returned = new Date(returnDate);
+
+if (pickup >= returned) {
+  return res.status(400).json({
+    message: "Return date must be after pickup date",
+  });
+}
+
+if (pickup < new Date()) {
+  return res.status(400).json({
+    message: "Pickup date cannot be in the past",
+  });
+}
+
     if (!vehicle) {
       return res.status(404).json({
         message: "Vehicle not found",

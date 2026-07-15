@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
+const crypto = require("crypto");
 
 const AppDataSource = require("../config/db");
 const User = require("../models/user");
@@ -210,9 +211,143 @@ const getProfile = async (req, res) => {
   }
 };
 
+// ====================== CHANGE PASSWORD ======================
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        message: "Current password and new password are required",
+      });
+    }
+
+    const user = await userRepository.findOne({
+      where: { id: req.user.id },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Current password is incorrect",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+
+    await userRepository.save(user);
+
+    res.status(200).json({
+      message: "Password changed successfully",
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+// ====================== FORGOT PASSWORD ======================
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await userRepository.findOne({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    user.resetToken = resetToken;
+    user.resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
+
+    await userRepository.save(user);
+
+    res.status(200).json({
+      message: "Password reset token generated successfully",
+      resetToken,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+// ====================== RESET PASSWORD ======================
+const resetPassword = async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    if (!resetToken || !newPassword) {
+      return res.status(400).json({
+        message: "Reset token and new password are required",
+      });
+    }
+
+    const user = await userRepository.findOne({
+      where: {
+        resetToken,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Invalid reset token",
+      });
+    }
+
+    if (new Date() > new Date(user.resetTokenExpires)) {
+      return res.status(400).json({
+        message: "Reset token has expired",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    user.resetToken = null;
+    user.resetTokenExpires = null;
+
+    await userRepository.save(user);
+
+    res.status(200).json({
+      message: "Password reset successfully",
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   refreshToken,
   getProfile,
+  changePassword,
+  forgotPassword,
+  resetPassword,
 };
